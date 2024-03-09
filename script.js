@@ -4,7 +4,8 @@ import fs from 'fs/promises';
 import mongoose from 'mongoose';
 import { Buffer } from 'buffer';
 import path from 'path';
-import fetch from 'node-fetch'; // Import fetch
+import fetch from 'node-fetch'; 
+import { File } from './models/files.js'; 
 
 const upload = multer({ dest: 'uploads/' });
 
@@ -16,7 +17,7 @@ const fileSchema = new mongoose.Schema({ data: Buffer, contentType: String });
 const File = mongoose.model('File', fileSchema);
 
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html')); // Assuming your HTML file is named 'index.html'
+    res.sendFile(path.join(__dirname, 'index.html')); 
 });
 
 app.post('/upload', upload.single('fileInput'), async (req, res) => {
@@ -24,7 +25,6 @@ app.post('/upload', upload.single('fileInput'), async (req, res) => {
         const fileData = await fs.readFile(req.file.path);
         const file = new File({ data: fileData, contentType: req.file.mimetype });
         await file.save();
-
         // OCR API
         const apiKey = 'K86594455288957';
         const url = 'https://api.ocr.space/parse/image';
@@ -39,7 +39,7 @@ app.post('/upload', upload.single('fileInput'), async (req, res) => {
             })
         });
         const data = await response.json();
-        res.send(data); // Send OCR data as response
+        res.send(data); 
     } catch (err) {
         res.status(500).send(err);
     }
@@ -55,6 +55,14 @@ app.get('/file/:id', async (req, res) => {
         res.send(file.data);
     } catch (err) {
         res.status(500).send(err);
+    }
+});
+
+fs.readFile('output.txt', 'utf8', (err, data) => {
+    if (err) {
+        console.error(`Error reading file from disk: ${err}`);
+    } else {
+        console.log(`File contents: ${data}`);
     }
 });
 
