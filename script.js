@@ -4,6 +4,7 @@ import fs from 'fs/promises';
 import mongoose from 'mongoose';
 import { Buffer } from 'buffer';
 import path from 'path';
+import fetch from 'node-fetch'; // Import fetch
 
 const upload = multer({ dest: 'uploads/' });
 
@@ -23,7 +24,35 @@ app.post('/upload', upload.single('fileInput'), async (req, res) => {
         const fileData = await fs.readFile(req.file.path);
         const file = new File({ data: fileData, contentType: req.file.mimetype });
         await file.save();
-        res.send('File uploaded and saved in database.');
+
+        // OCR API
+        const apiKey = 'K86594455288957';
+        const url = 'https://api.ocr.space/parse/image';
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'apiKey': apiKey,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                base64Image: `data:${req.file.mimetype};base64,${fileData.toString('base64')}`
+            })
+        });
+        const data = await response.json();
+        res.send(data); // Send OCR data as response
+    } catch (err) {
+        res.status(500).send(err);
+    }
+});
+
+app.get('/file/:id', async (req, res) => {
+    try {
+        const file = await File.findById(req.params.id);
+        if (!file) {
+            return res.status(404).send('File not found.');
+        }
+        res.set('Content-Type', file.contentType);
+        res.send(file.data);
     } catch (err) {
         res.status(500).send(err);
     }
